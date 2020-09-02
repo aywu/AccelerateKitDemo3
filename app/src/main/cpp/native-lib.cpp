@@ -1,3 +1,4 @@
+// v5.2: added group and serial queue approaches.
 // v5.1: bug reporting sample sources. (cleaned)
 // coded the sample codes (calculate pi) from the HQ slides.
 // The problem: exetion time: 14 - 15 seconds. It has taken much longer than
@@ -56,6 +57,8 @@ double calcPi1(long n, int i, int t) {
   return _pi;
 }
 
+// v1: Concurrent Queue:
+// poor performance: 14 seconds
 void dispatch_sample_v1_works(char * output) {
   int i;
   int t = 4;
@@ -86,7 +89,9 @@ void dispatch_sample_v1_works(char * output) {
   sprintf(output, "C Pi = %.17g (Iteration:10^9).", pi1);
 }
 
-void dispatch_sample(char * output) {
+// v2: dispatch_apply version.
+// poor performance: takes 14 seconds.
+void dispatch_sample_v2_works(char * output) {
   int i;
   int t = 4;
   __block double pi1 = 0;
@@ -102,6 +107,64 @@ void dispatch_sample(char * output) {
         pi1 += _pi;
       });
       //TRACE_END();
+  });
+
+  dispatch_release(serial_q);
+
+  sprintf(output, "C Pi = %.17g (Iteration:10^9).", pi1);
+}
+
+// v3: Group version:
+// Best performance: 1 second.
+void dispatch_sample(char * output) {
+  int i;
+  int t = 4;
+  __block double pi1 = 0;
+  unsigned long cost_time;
+
+  // TRACE_TIME_BEGIN();
+  dispatch_queue_t concurr_q = dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0);
+  dispatch_queue_t serial_q = dispatch_queue_create("serial", DISPATCH_QUEUE_SERIAL);
+  dispatch_group_t grp = dispatch_group_create();
+
+  for (i = 0; i < t; i++) {
+    dispatch_group_async(grp, concurr_q, ^{
+        double _pi = calcPi1(1000000000, i, t);
+        dispatch_sync(serial_q, ^{
+          pi1 += _pi;
+        });
+    });
+  }
+
+  dispatch_group_wait(grp, DISPATCH_TIME_FOREVER);
+
+  dispatch_release(grp);
+  dispatch_release(serial_q);
+  dispatch_release(concurr_q);
+
+  sprintf(output, "C Pi = %.17g (Iteration:10^9).", pi1);
+}
+
+// v4: Sequential Queue.
+// poor performance: 4 - 5 seconds
+void dispatch_sample_v4_works(char * output) {
+  int i;
+  int t = 4;
+  __block double pi1 = 0;
+  unsigned long cost_time;
+
+  // TRACE_TIME_BEGIN();
+  dispatch_queue_t serial_q = dispatch_queue_create("pi_concurr", DISPATCH_QUEUE_SERIAL);
+
+  for (i = 0; i < t; i++) {
+    dispatch_async(serial_q, ^{
+        double _pi = calcPi1(1000000000, i, t);
+        pi1 += _pi;
+    });
+  }
+
+  dispatch_sync(serial_q, ^{
+    __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, "Done.");
   });
 
   dispatch_release(serial_q);
