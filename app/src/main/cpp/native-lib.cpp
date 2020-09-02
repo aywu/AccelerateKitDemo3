@@ -33,7 +33,7 @@ Java_com_hms_localauth_acceleratekitdemo3_MainActivity_calculatePi(
 
     long seconds = (end2.tv_sec - start2.tv_sec);
     long micros = ((seconds * 1000000) + end2.tv_usec) - (start2.tv_usec);
-    sprintf(temp, "\n C exe time = %ld sec, %ld micros.", seconds, micros);
+    sprintf(temp, "\n  C exe time = %ld sec, %ld micros.", seconds, micros);
 
     strcat(output, temp);
 
@@ -169,5 +169,5 @@ void dispatch_sample_v4_works(char * output) {
 
   dispatch_release(serial_q);
 
-  sprintf(output, "C Pi = %.17g (Iteration:10^9).", pi1);
+  sprintf(output, "  C Pi = %.17g (Iteration:10^9).", pi1);
 }
