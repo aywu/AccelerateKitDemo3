@@ -35,22 +35,44 @@ public class MainActivity extends AppCompatActivity {
         buffer.append(calculatePi());
         double durationInsecondC = (System.nanoTime() - begin)/1000000000;
 
-        buffer.append("\n JNI exe time: " + String.valueOf(durationInsecondC) + " seconds.");
+        buffer.append("\n  JNI exe time: " + String.valueOf(durationInsecondC) + " seconds.");
         buffer.append("\n\n");
 
         // Java Multi-threading
         begin = System.nanoTime();
-        calcPi();
+        calcPiMT();
         double durationInsecondJava = (System.nanoTime() - begin)/1000000000;
-        buffer.append("Java Pi: " + mPi + "\n(Iteration: 10^9)\n time: " + durationInsecondJava + " seconds.");
+        buffer.append("  Java(MT) Pi: " + mPi + "\n  (Iteration: 10^9)\n  time: " + durationInsecondJava + " seconds.");
+
+        // Java Single thread brute-force
+        begin = System.nanoTime();
+        calcPiST();
+        durationInsecondJava = (System.nanoTime() - begin)/1000000000;
+        buffer.append("\n\n  Java(ST) Pi: " + mPi + "\n  (Iteration: 10^9)\n  time: " + durationInsecondJava + " seconds.");
 
         tv.setText(buffer.toString());
     }
 
-    private void calcPi() {
+    private double calcPi1(long n, int i, int t) {
+        double _pi = 0, sign = 1.0;
+        long j = 1 + i;
+        // pi calc formula: pi/4 = 1 - 1/3 + 1/5 - 1/7 + 1/9 ...
+        while (j <= n) {
+          sign = ((j & 1) == 0L ? (-1) : 1);
+          _pi += (4*sign/(2*j -1));
+          j += t;
+        }
+
+        return _pi;
+    }
+
+    /**
+    * Multi-threading calculation of Pi.
+    */
+    private void calcPiMT() {
         final long N = 1000000000;
         int i = 0;
-        int m = 4;
+        int m = 10;
         List<Thread> threads = new ArrayList<Thread>();
         Thread t;
 
@@ -81,17 +103,12 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private double calcPi1(long n, int i, int t) {
-        double _pi = 0, sign = 1.0;
-        long j = 1 + i;
-        // pi calc formula: pi/4 = 1 - 1/3 + 1/5 - 1/7 + 1/9 ...
-        while (j <= n) {
-          sign = ((j & 1) == 0L ? (-1) : 1);
-          _pi += (4*sign/(2*j -1));
-          j += t;
-        }
-
-        return _pi;
+    /**
+    * Single threading brute-force calculation of Pi.
+    */
+    private void calcPiST() {
+        final long N = 1000000000;
+        mPi = calcPi1(N, 0, 1);
     }
 
 
