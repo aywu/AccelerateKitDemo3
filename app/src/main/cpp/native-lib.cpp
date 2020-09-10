@@ -14,7 +14,10 @@
 
 #define LOG_TAG "dispatch"
 
-void dispatch_sample(char *);
+void dispatch_sample_v1_works(char *);
+void dispatch_sample_v2_works(char *);
+void dispatch_sample_v3_works(char *);
+void dispatch_sample_v4_works(char *);
 void display(double val);
 
 extern "C" JNIEXPORT jstring JNICALL
@@ -28,7 +31,7 @@ Java_com_hms_localauth_acceleratekitdemo3_MainActivity_calculatePi(
     dispatch_autostat_enable(env);
 
     gettimeofday(&start2, NULL);
-    dispatch_sample(&output[0]);
+    dispatch_sample_v4_works(&output[0]);
     gettimeofday(&end2, NULL);
 
     long seconds = (end2.tv_sec - start2.tv_sec);
@@ -43,7 +46,7 @@ Java_com_hms_localauth_acceleratekitdemo3_MainActivity_calculatePi(
     return env->NewStringUTF(output);
 }
 
-double calcPi1(long n, int i, int t) {
+double calcPi1(unsigned long n, int i, int t) {
   double _pi = 0, sign = 1.0;
   long j = 1 + i;
   // pi calc formula: pi/4 = 1 - 1/3 + 1/5 - 1/7 + 1/9 ...
@@ -58,12 +61,12 @@ double calcPi1(long n, int i, int t) {
 }
 
 // v1: Concurrent Queue:
-// poor performance: 14 seconds
+// performance: 1 seconds
 void dispatch_sample_v1_works(char * output) {
   int i;
   int t = 4;
   __block double pi1 = 0;
-  long long N = 10000000000;
+  unsigned long N = 1000000000;
 
   //TRACE_TIME_BEGIN();
   dispatch_queue_t concurr_q = dispatch_queue_create("pi_concurr", DISPATCH_QUEUE_CONCURRENT);
@@ -90,12 +93,12 @@ void dispatch_sample_v1_works(char * output) {
 }
 
 // v2: dispatch_apply version.
-// poor performance: takes 14 seconds.
+// performance: takes 1 seconds.
 void dispatch_sample_v2_works(char * output) {
   int i;
   int t = 4;
   __block double pi1 = 0;
-  long long N = 10000000000;
+  unsigned long N = 1000000000;
 
   //TRACE_TIME_BEGIN();
   dispatch_queue_t serial_q = dispatch_queue_create("pi_concurr", DISPATCH_QUEUE_SERIAL);
@@ -115,12 +118,13 @@ void dispatch_sample_v2_works(char * output) {
 }
 
 // v3: Group version:
-// Best performance: 1 second.
-void dispatch_sample(char * output) {
+// performance: 1 second.
+void dispatch_sample_v3_works(char * output) {
   int i;
   int t = 4;
   __block double pi1 = 0;
   unsigned long cost_time;
+  unsigned long N = 1000000000;
 
   // TRACE_TIME_BEGIN();
   dispatch_queue_t concurr_q = dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0);
@@ -129,7 +133,7 @@ void dispatch_sample(char * output) {
 
   for (i = 0; i < t; i++) {
     dispatch_group_async(grp, concurr_q, ^{
-        double _pi = calcPi1(1000000000, i, t);
+        double _pi = calcPi1(N, i, t);
         dispatch_sync(serial_q, ^{
           pi1 += _pi;
         });
@@ -146,19 +150,20 @@ void dispatch_sample(char * output) {
 }
 
 // v4: Sequential Queue.
-// poor performance: 4 - 5 seconds
+// performance: 4 seconds
 void dispatch_sample_v4_works(char * output) {
   int i;
   int t = 4;
   __block double pi1 = 0;
   unsigned long cost_time;
+  unsigned long N = 1000000000;
 
   // TRACE_TIME_BEGIN();
   dispatch_queue_t serial_q = dispatch_queue_create("pi_concurr", DISPATCH_QUEUE_SERIAL);
 
   for (i = 0; i < t; i++) {
     dispatch_async(serial_q, ^{
-        double _pi = calcPi1(1000000000, i, t);
+        double _pi = calcPi1(N, i, t);
         pi1 += _pi;
     });
   }
